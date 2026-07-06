@@ -30,7 +30,7 @@ jobs:
 
       - name: Build executable with PyInstaller
         run: |
-          pyinstaller -F auto_tips.py -i icon.ico
+          pyinstaller -w -F auto_tips.py -i icon.ico
 
       - name: Upload executable artifact
         uses: actions/upload-artifact@v4
