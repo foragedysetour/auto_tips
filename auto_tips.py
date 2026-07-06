@@ -62,19 +62,42 @@ class AutoTipsApp(QMainWindow):
         
         main_layout.addLayout(bottom_layout)
         
+    def getDefaultDocumentsFolder(self):
+        """获取当前用户的默认文档文件夹路径。"""
+        if os.name == 'nt':
+            try:
+                import ctypes
+                from ctypes import wintypes
+
+                CSIDL_PERSONAL = 0x0005  # My Documents
+                buf = ctypes.create_unicode_buffer(wintypes.MAX_PATH)
+                result = ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_PERSONAL, None, 0, buf)
+                if result == 0:
+                    return buf.value
+            except Exception:
+                pass
+
+        return os.path.join(os.path.expanduser('~'), 'Documents')
+
     def getMarkdownFilePath(self):
         """获取Markdown文件路径"""
-        # 扩展环境变量%USERPROFILE%
-        user_profile = os.environ.get('USERPROFILE', '')
-        if not user_profile:
-            user_profile = os.path.expanduser('~')
-        
-        # 构建完整路径
-        docs_path = os.path.join(user_profile, 'Documents', 'auto_tips')
+        # 优先从环境变量获取文档目录
+        docs_dir = os.environ.get('AUTO_TIPS_DOC_DIR', '')
+        if docs_dir:
+            docs_dir = os.path.expandvars(os.path.expanduser(docs_dir))
+            if docs_dir.lower().endswith('.md'):
+                file_path = docs_dir
+                file_dir = os.path.dirname(file_path)
+                os.makedirs(file_dir, exist_ok=True)
+                return file_path
+            os.makedirs(docs_dir, exist_ok=True)
+            return os.path.join(docs_dir, 'readme.md')
+
+        # 使用系统默认文档目录，支持已移动的Windows文档目录
+        default_docs = self.getDefaultDocumentsFolder()
+        docs_path = os.path.join(default_docs, 'auto_tips')
         os.makedirs(docs_path, exist_ok=True)
-        
-        file_path = os.path.join(docs_path, 'readme.md')
-        return file_path
+        return os.path.join(docs_path, 'readme.md')
     
     def loadMarkdown(self):
         """加载并显示Markdown文件"""
